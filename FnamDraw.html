@@ -62,6 +62,7 @@ canvas {
   touch-action: none;
   display: block;
   margin: 0 auto;
+  cursor: crosshair;
 }
 
 .form-group {
@@ -196,6 +197,7 @@ titleInput.value = localStorage.getItem("submissionTitle") || "";
 descriptionInput.value = localStorage.getItem("submissionDescription") || "";
 
 const saved = localStorage.getItem("savedDrawing");
+
 if (saved) {
   const img = new Image();
   img.onload = () => {
@@ -220,11 +222,11 @@ descriptionInput.addEventListener("input", saveFields);
 
 function getPos(e) {
   const rect = canvas.getBoundingClientRect();
-  const touch = e.touches ? e.touches[0] : e;
+  const source = e.touches ? e.touches[0] : e;
 
   return {
-    x: (touch.clientX - rect.left) * (canvas.width / rect.width),
-    y: (touch.clientY - rect.top) * (canvas.height / rect.height)
+    x: (source.clientX - rect.left) * (canvas.width / rect.width),
+    y: (source.clientY - rect.top) * (canvas.height / rect.height)
   };
 }
 
@@ -232,19 +234,28 @@ function insideCanvas(pos) {
   return pos.x >= 0 && pos.x <= canvas.width && pos.y >= 0 && pos.y <= canvas.height;
 }
 
-function start(e) {
-  drawing = true;
-  const pos = getPos(e);
-  lastPos = insideCanvas(pos) ? pos : null;
+function drawDot(pos) {
+  ctx.beginPath();
+  ctx.arc(pos.x, pos.y, 4, 0, Math.PI * 2);
+  ctx.fillStyle = "black";
+  ctx.fill();
+}
 
-  if (lastPos) {
-    ctx.beginPath();
-    ctx.moveTo(lastPos.x, lastPos.y);
-  }
+function start(e) {
+  const pos = getPos(e);
+
+  if (!insideCanvas(pos)) return;
+
+  drawing = true;
+  lastPos = pos;
+
+  drawDot(pos);
+  saveDrawing();
 }
 
 function draw(e) {
   if (!drawing) return;
+
   e.preventDefault();
 
   const pos = getPos(e);
@@ -254,8 +265,9 @@ function draw(e) {
     return;
   }
 
-  ctx.lineWidth = 6;
+  ctx.lineWidth = 8;
   ctx.lineCap = "round";
+  ctx.lineJoin = "round";
   ctx.strokeStyle = "black";
 
   ctx.beginPath();
