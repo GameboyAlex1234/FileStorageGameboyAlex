@@ -1,80 +1,111 @@
 <!DOCTYPE html>
 <html>
+<head>
+  <meta charset="UTF-8">
+  <title>Drawing Submitter</title>
+</head>
 <body>
-  <h1>Draw something</h1>
 
-  <canvas id="canvas" width="500" height="300" style="border:1px solid black;"></canvas>
-  <br>
-  <button id="clear">Clear</button>
-  <button id="submit">Submit</button>
+<h1>Draw Something</h1>
 
-  <script>
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
-    let drawing = false;
+<canvas id="canvas" width="500" height="300" style="border:1px solid black;"></canvas>
 
-    function getPos(e) {
-      const rect = canvas.getBoundingClientRect();
-      const touch = e.touches ? e.touches[0] : e;
-      return {
-        x: touch.clientX - rect.left,
-        y: touch.clientY - rect.top
-      };
-    }
+<br><br>
 
-    function start(e) {
-      drawing = true;
-      const pos = getPos(e);
-      ctx.beginPath();
-      ctx.moveTo(pos.x, pos.y);
-    }
+<button id="clear">Clear</button>
+<button id="submit">Submit</button>
 
-    function draw(e) {
-      if (!drawing) return;
-      e.preventDefault();
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
 
-      const pos = getPos(e);
-      ctx.lineWidth = 4;
-      ctx.lineCap = "round";
-      ctx.strokeStyle = "black";
-      ctx.lineTo(pos.x, pos.y);
-      ctx.stroke();
-    }
+let drawing = false;
 
-    function stop() {
-      drawing = false;
-    }
+function getPos(e) {
+  const rect = canvas.getBoundingClientRect();
 
-    canvas.addEventListener("mousedown", start);
-    canvas.addEventListener("mousemove", draw);
-    canvas.addEventListener("mouseup", stop);
-    canvas.addEventListener("mouseleave", stop);
-
-    canvas.addEventListener("touchstart", start);
-    canvas.addEventListener("touchmove", draw);
-    canvas.addEventListener("touchend", stop);
-
-    document.getElementById("clear").onclick = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (e.touches) {
+    return {
+      x: e.touches[0].clientX - rect.left,
+      y: e.touches[0].clientY - rect.top
     };
+  }
 
-    document.getElementById("submit").onclick = async () => {
-      const image = canvas.toDataURL("image/png");
+  return {
+    x: e.clientX - rect.left,
+    y: e.clientY - rect.top
+  };
+}
 
-      const res = await fetch("/.netlify/functions/submit-drawing", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ image })
-      });
+function start(e) {
+  drawing = true;
 
-      if (res.ok) {
-        alert("Drawing sent!");
-      } else {
-        alert("Something went wrong.");
-      }
-    };
-  </script>
+  const pos = getPos(e);
+
+  ctx.beginPath();
+  ctx.moveTo(pos.x, pos.y);
+}
+
+function draw(e) {
+  if (!drawing) return;
+
+  e.preventDefault();
+
+  const pos = getPos(e);
+
+  ctx.lineWidth = 4;
+  ctx.lineCap = "round";
+  ctx.strokeStyle = "black";
+
+  ctx.lineTo(pos.x, pos.y);
+  ctx.stroke();
+}
+
+function stop() {
+  drawing = false;
+}
+
+canvas.addEventListener("mousedown", start);
+canvas.addEventListener("mousemove", draw);
+canvas.addEventListener("mouseup", stop);
+canvas.addEventListener("mouseleave", stop);
+
+canvas.addEventListener("touchstart", start);
+canvas.addEventListener("touchmove", draw);
+canvas.addEventListener("touchend", stop);
+
+document.getElementById("clear").onclick = () => {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+};
+
+document.getElementById("submit").onclick = async () => {
+  try {
+    const image = canvas.toDataURL("image/png");
+
+    const res = await fetch("/.netlify/functions/submit-drawing", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ image })
+    });
+
+    const text = await res.text();
+
+    console.log("Status:", res.status);
+    console.log("Response:", text);
+
+    if (res.ok) {
+      alert("Drawing sent!");
+    } else {
+      alert("Error: " + text);
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Error: " + err.message);
+  }
+};
+</script>
+
 </body>
 </html>
