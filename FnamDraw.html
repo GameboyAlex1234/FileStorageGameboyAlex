@@ -28,8 +28,8 @@ body {
   position: relative;
   z-index: 2;
   text-align: center;
-  padding: 45px;
-  width: min(95vw, 1000px);
+  padding: 35px;
+  width: min(95vw, 1050px);
   border: 1px solid #0ff;
   border-radius: 25px;
   background: rgba(0, 255, 255, 0.05);
@@ -44,6 +44,36 @@ h1 {
   text-transform: uppercase;
   letter-spacing: 0.1em;
   animation: glowPulse 2s infinite alternate;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  background: rgba(0, 255, 255, 0.05);
+  border: 2px solid #0ff;
+  border-radius: 12px;
+  color: white;
+  font-family: 'Orbitron', sans-serif;
+  padding: 14px;
+  outline: none;
+  box-shadow: 0 0 10px #0ff;
+}
+
+.form-group textarea {
+  min-height: 95px;
+  resize: vertical;
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: rgba(255, 255, 255, 0.6);
 }
 
 canvas {
@@ -124,6 +154,12 @@ button:hover {
 <div class="container">
   <h1>Draw Your Submission</h1>
 
+  <div class="form-group">
+    <input id="username" type="text" placeholder="Username">
+    <input id="submissionTitle" type="text" placeholder="Submission Title">
+    <textarea id="description" placeholder="Description"></textarea>
+  </div>
+
   <canvas id="canvas" width="1200" height="700"></canvas>
 
   <div class="buttons">
@@ -138,8 +174,15 @@ button:hover {
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 const statusText = document.getElementById("status");
+const usernameInput = document.getElementById("username");
+const titleInput = document.getElementById("submissionTitle");
+const descriptionInput = document.getElementById("description");
 
 let drawing = false;
+
+usernameInput.value = localStorage.getItem("submissionUsername") || "";
+titleInput.value = localStorage.getItem("submissionTitle") || "";
+descriptionInput.value = localStorage.getItem("submissionDescription") || "";
 
 const saved = localStorage.getItem("savedDrawing");
 if (saved) {
@@ -153,6 +196,16 @@ if (saved) {
 function saveDrawing() {
   localStorage.setItem("savedDrawing", canvas.toDataURL("image/png"));
 }
+
+function saveFields() {
+  localStorage.setItem("submissionUsername", usernameInput.value);
+  localStorage.setItem("submissionTitle", titleInput.value);
+  localStorage.setItem("submissionDescription", descriptionInput.value);
+}
+
+usernameInput.addEventListener("input", saveFields);
+titleInput.addEventListener("input", saveFields);
+descriptionInput.addEventListener("input", saveFields);
 
 function getPos(e) {
   const rect = canvas.getBoundingClientRect();
@@ -209,8 +262,12 @@ document.getElementById("clear").onclick = () => {
 
 document.getElementById("submit").onclick = async () => {
   try {
+    saveFields();
     statusText.textContent = "Sending drawing...";
 
+    const username = usernameInput.value.trim();
+    const title = titleInput.value.trim();
+    const description = descriptionInput.value.trim();
     const image = canvas.toDataURL("image/png");
 
     const res = await fetch("/.netlify/functions/submit-drawing", {
@@ -218,7 +275,12 @@ document.getElementById("submit").onclick = async () => {
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ image })
+      body: JSON.stringify({
+        username,
+        title,
+        description,
+        image
+      })
     });
 
     const text = await res.text();
