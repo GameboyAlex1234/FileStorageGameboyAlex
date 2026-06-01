@@ -104,8 +104,8 @@ button {
   background: transparent;
   color: #0ff;
   border: 2px solid #0ff;
-  padding: 14px 30px;
-  font-size: 1rem;
+  padding: 14px 24px;
+  font-size: 0.95rem;
   margin: 6px;
   border-radius: 10px;
   cursor: pointer;
@@ -114,7 +114,8 @@ button {
   transition: 0.2s;
 }
 
-button:hover {
+button:hover,
+button.active {
   background: #0ff;
   color: #000;
   box-shadow: 0 0 25px #0ff;
@@ -173,11 +174,15 @@ button:hover {
     </div>
 
     <div class="buttons">
+      <button id="pen" class="active">Pen</button>
+      <button id="eraser">Eraser</button>
+      <button id="undo">Undo</button>
+      <button id="redo">Redo</button>
       <button id="clear">Clear</button>
       <button id="submit">Submit</button>
     </div>
 
-    <div id="status">Draw, then submit your PNG.</div>
+    <div id="status">Pen selected.</div>
   </div>
 </div>
 
@@ -188,13 +193,37 @@ const statusText = document.getElementById("status");
 const usernameInput = document.getElementById("username");
 const titleInput = document.getElementById("submissionTitle");
 const descriptionInput = document.getElementById("description");
+const penButton = document.getElementById("pen");
+const eraserButton = document.getElementById("eraser");
 
 let drawing = false;
 let lastPos = null;
+let tool = "pen";
+let undoStack = [];
+let redoStack = [];
 
 usernameInput.value = localStorage.getItem("submissionUsername") || "";
 titleInput.value = localStorage.getItem("submissionTitle") || "";
 descriptionInput.value = localStorage.getItem("submissionDescription") || "";
+
+function saveDrawing() {
+  localStorage.setItem("savedDrawing", canvas.toDataURL("image/png"));
+}
+
+function saveState() {
+  undoStack.push(canvas.toDataURL("image/png"));
+  if (undoStack.length > 50) undoStack.shift();
+}
+
+function restoreState(data) {
+  const img = new Image();
+  img.onload = () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0);
+    saveDrawing();
+  };
+  img.src = data;
+}
 
 const saved = localStorage.getItem("savedDrawing");
 
@@ -202,12 +231,11 @@ if (saved) {
   const img = new Image();
   img.onload = () => {
     ctx.drawImage(img, 0, 0);
+    saveState();
   };
   img.src = saved;
-}
-
-function saveDrawing() {
-  localStorage.setItem("savedDrawing", canvas.toDataURL("image/png"));
+} else {
+  saveState();
 }
 
 function saveFields() {
@@ -236,8 +264,8 @@ function insideCanvas(pos) {
 
 function drawDot(pos) {
   ctx.beginPath();
-  ctx.arc(pos.x, pos.y, 4, 0, Math.PI * 2);
-  ctx.fillStyle = "black";
+  ctx.arc(pos.x, pos.y, tool === "eraser" ? 16 : 4, 0, Math.PI * 2);
+  ctx.fillStyle = tool === "eraser" ? "white" : "black";
   ctx.fill();
 }
 
@@ -248,6 +276,7 @@ function start(e) {
 
   drawing = true;
   lastPos = pos;
+  redoStack = [];
 
   drawDot(pos);
   saveDrawing();
@@ -265,10 +294,10 @@ function draw(e) {
     return;
   }
 
-  ctx.lineWidth = 8;
+  ctx.lineWidth = tool === "eraser" ? 32 : 8;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
-  ctx.strokeStyle = "black";
+  ctx.strokeStyle = tool === "eraser" ? "white" : "black";
 
   ctx.beginPath();
 
@@ -286,9 +315,22 @@ function draw(e) {
 }
 
 function stop() {
+  if (!drawing) return;
+
   drawing = false;
   lastPos = null;
+  saveState();
   saveDrawing();
+}
+
+function setTool(newTool) {
+  tool = newTool;
+
+  penButton.classList.toggle("active", tool === "pen");
+  eraserButton.classList.toggle("active", tool === "eraser");
+
+  canvas.style.cursor = tool === "eraser" ? "cell" : "crosshair";
+  statusText.textContent = tool === "eraser" ? "Eraser selected." : "Pen selected.";
 }
 
 document.addEventListener("mousedown", start);
@@ -299,9 +341,36 @@ document.addEventListener("touchstart", start, { passive: false });
 document.addEventListener("touchmove", draw, { passive: false });
 document.addEventListener("touchend", stop);
 
+penButton.onclick = () => {
+  setTool("pen");
+};
+
+eraserButton.onclick = () => {
+  setTool("eraser");
+};
+
+document.getElementById("undo").onclick = () => {
+  if (undoStack.length <= 1) return;
+
+  redoStack.push(undoStack.pop());
+  restoreState(undoStack[undoStack.length - 1]);
+  statusText.textContent = "Undo.";
+};
+
+document.getElementById("redo").onclick = () => {
+  if (redoStack.length === 0) return;
+
+  const state = redoStack.pop();
+  undoStack.push(state);
+  restoreState(state);
+  statusText.textContent = "Redo.";
+};
+
 document.getElementById("clear").onclick = () => {
+  redoStack = [];
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  localStorage.removeItem("savedDrawing");
+  saveDrawing();
+  saveState();
   statusText.textContent = "Canvas cleared.";
 };
 
