@@ -15,21 +15,26 @@
 body {
   margin: 0;
   min-height: 100vh;
+  background: radial-gradient(circle at center, #0a0a0a, #050505);
+  font-family: 'Orbitron', sans-serif;
+  color: white;
+  overflow-x: hidden;
+}
+
+.page {
+  min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: radial-gradient(circle at center, #0a0a0a, #050505);
-  overflow: hidden;
-  font-family: 'Orbitron', sans-serif;
-  color: white;
+  padding: 25px;
 }
 
 .container {
   position: relative;
   z-index: 2;
   text-align: center;
-  padding: 35px;
-  width: min(95vw, 1050px);
+  padding: 28px;
+  width: min(96vw, 1050px);
   border: 1px solid #0ff;
   border-radius: 25px;
   background: rgba(0, 255, 255, 0.05);
@@ -38,19 +43,32 @@ body {
 }
 
 h1 {
-  margin-top: 0;
-  font-size: 2.4rem;
+  margin: 0 0 18px;
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
   color: #fff;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   animation: glowPulse 2s infinite alternate;
 }
 
+canvas {
+  background: white;
+  border: 2px solid #0ff;
+  border-radius: 16px;
+  box-shadow: 0 0 20px #0ff;
+  width: min(100%, 900px);
+  height: auto;
+  aspect-ratio: 12 / 7;
+  touch-action: none;
+  display: block;
+  margin: 0 auto;
+}
+
 .form-group {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-bottom: 18px;
+  margin-top: 18px;
 }
 
 .form-group input,
@@ -67,7 +85,7 @@ h1 {
 }
 
 .form-group textarea {
-  min-height: 95px;
+  min-height: 80px;
   resize: vertical;
 }
 
@@ -76,19 +94,8 @@ h1 {
   color: rgba(255, 255, 255, 0.6);
 }
 
-canvas {
-  background: white;
-  border: 2px solid #0ff;
-  border-radius: 16px;
-  box-shadow: 0 0 20px #0ff;
-  width: 900px;
-  height: 525px;
-  max-width: 100%;
-  touch-action: none;
-}
-
 .buttons {
-  margin-top: 20px;
+  margin-top: 18px;
 }
 
 button {
@@ -113,7 +120,7 @@ button:hover {
 }
 
 #status {
-  margin-top: 15px;
+  margin-top: 14px;
   font-size: 0.9em;
   color: #0ff;
 }
@@ -128,12 +135,13 @@ button:hover {
 }
 
 .particle {
-  position: absolute;
+  position: fixed;
   background: #0ff;
   border-radius: 50%;
   opacity: 0.7;
   animation: floatParticles linear infinite;
   z-index: 1;
+  pointer-events: none;
 }
 
 @keyframes floatParticles {
@@ -151,23 +159,25 @@ button:hover {
 
 <body>
 
-<div class="container">
-  <h1>Draw Your Submission</h1>
+<div class="page">
+  <div class="container">
+    <h1>Draw Your Submission</h1>
 
-  <div class="form-group">
-    <input id="username" type="text" placeholder="Username">
-    <input id="submissionTitle" type="text" placeholder="Submission Title">
-    <textarea id="description" placeholder="Description"></textarea>
+    <canvas id="canvas" width="1200" height="700"></canvas>
+
+    <div class="form-group">
+      <input id="username" type="text" placeholder="Username">
+      <input id="submissionTitle" type="text" placeholder="Submission Title">
+      <textarea id="description" placeholder="Description"></textarea>
+    </div>
+
+    <div class="buttons">
+      <button id="clear">Clear</button>
+      <button id="submit">Submit</button>
+    </div>
+
+    <div id="status">Draw, then submit your PNG.</div>
   </div>
-
-  <canvas id="canvas" width="1200" height="700"></canvas>
-
-  <div class="buttons">
-    <button id="clear">Clear</button>
-    <button id="submit">Submit</button>
-  </div>
-
-  <div id="status">Draw, then submit your PNG.</div>
 </div>
 
 <script>
@@ -179,6 +189,7 @@ const titleInput = document.getElementById("submissionTitle");
 const descriptionInput = document.getElementById("description");
 
 let drawing = false;
+let lastPos = null;
 
 usernameInput.value = localStorage.getItem("submissionUsername") || "";
 titleInput.value = localStorage.getItem("submissionTitle") || "";
@@ -217,11 +228,19 @@ function getPos(e) {
   };
 }
 
+function insideCanvas(pos) {
+  return pos.x >= 0 && pos.x <= canvas.width && pos.y >= 0 && pos.y <= canvas.height;
+}
+
 function start(e) {
   drawing = true;
   const pos = getPos(e);
-  ctx.beginPath();
-  ctx.moveTo(pos.x, pos.y);
+  lastPos = insideCanvas(pos) ? pos : null;
+
+  if (lastPos) {
+    ctx.beginPath();
+    ctx.moveTo(lastPos.x, lastPos.y);
+  }
 }
 
 function draw(e) {
@@ -230,29 +249,43 @@ function draw(e) {
 
   const pos = getPos(e);
 
+  if (!insideCanvas(pos)) {
+    lastPos = null;
+    return;
+  }
+
   ctx.lineWidth = 6;
   ctx.lineCap = "round";
   ctx.strokeStyle = "black";
 
+  ctx.beginPath();
+
+  if (lastPos) {
+    ctx.moveTo(lastPos.x, lastPos.y);
+  } else {
+    ctx.moveTo(pos.x, pos.y);
+  }
+
   ctx.lineTo(pos.x, pos.y);
   ctx.stroke();
 
+  lastPos = pos;
   saveDrawing();
 }
 
 function stop() {
   drawing = false;
+  lastPos = null;
   saveDrawing();
 }
 
-canvas.addEventListener("mousedown", start);
-canvas.addEventListener("mousemove", draw);
-canvas.addEventListener("mouseup", stop);
-canvas.addEventListener("mouseleave", stop);
+document.addEventListener("mousedown", start);
+document.addEventListener("mousemove", draw);
+document.addEventListener("mouseup", stop);
 
-canvas.addEventListener("touchstart", start);
-canvas.addEventListener("touchmove", draw);
-canvas.addEventListener("touchend", stop);
+document.addEventListener("touchstart", start, { passive: false });
+document.addEventListener("touchmove", draw, { passive: false });
+document.addEventListener("touchend", stop);
 
 document.getElementById("clear").onclick = () => {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -285,9 +318,6 @@ document.getElementById("submit").onclick = async () => {
 
     const text = await res.text();
 
-    console.log("Status:", res.status);
-    console.log("Response:", text);
-
     if (res.ok) {
       statusText.textContent = "Drawing sent!";
       alert("Drawing sent!");
@@ -296,7 +326,6 @@ document.getElementById("submit").onclick = async () => {
       alert("Error: " + text);
     }
   } catch (err) {
-    console.error(err);
     statusText.textContent = "Error sending drawing.";
     alert("Error: " + err.message);
   }
