@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Draw Something</title>
+<title>Draw Your Submission</title>
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
@@ -28,9 +28,10 @@ body {
   position: relative;
   z-index: 2;
   text-align: center;
-  padding: 30px;
+  padding: 45px;
+  width: min(95vw, 1000px);
   border: 1px solid #0ff;
-  border-radius: 20px;
+  border-radius: 25px;
   background: rgba(0, 255, 255, 0.05);
   box-shadow: 0 0 25px #0ff;
   backdrop-filter: blur(8px);
@@ -38,6 +39,7 @@ body {
 
 h1 {
   margin-top: 0;
+  font-size: 2.4rem;
   color: #fff;
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -47,10 +49,12 @@ h1 {
 canvas {
   background: white;
   border: 2px solid #0ff;
-  border-radius: 12px;
+  border-radius: 16px;
   box-shadow: 0 0 20px #0ff;
-  touch-action: none;
+  width: 900px;
+  height: 525px;
   max-width: 100%;
+  touch-action: none;
 }
 
 .buttons {
@@ -62,7 +66,8 @@ button {
   background: transparent;
   color: #0ff;
   border: 2px solid #0ff;
-  padding: 12px 22px;
+  padding: 14px 30px;
+  font-size: 1rem;
   margin: 6px;
   border-radius: 10px;
   cursor: pointer;
@@ -117,9 +122,9 @@ button:hover {
 <body>
 
 <div class="container">
-  <h1>Draw Something</h1>
+  <h1>Draw Your Submission</h1>
 
-  <canvas id="canvas" width="500" height="300"></canvas>
+  <canvas id="canvas" width="1200" height="700"></canvas>
 
   <div class="buttons">
     <button id="clear">Clear</button>
@@ -136,6 +141,19 @@ const statusText = document.getElementById("status");
 
 let drawing = false;
 
+const saved = localStorage.getItem("savedDrawing");
+if (saved) {
+  const img = new Image();
+  img.onload = () => {
+    ctx.drawImage(img, 0, 0);
+  };
+  img.src = saved;
+}
+
+function saveDrawing() {
+  localStorage.setItem("savedDrawing", canvas.toDataURL("image/png"));
+}
+
 function getPos(e) {
   const rect = canvas.getBoundingClientRect();
   const touch = e.touches ? e.touches[0] : e;
@@ -149,7 +167,6 @@ function getPos(e) {
 function start(e) {
   drawing = true;
   const pos = getPos(e);
-
   ctx.beginPath();
   ctx.moveTo(pos.x, pos.y);
 }
@@ -160,16 +177,19 @@ function draw(e) {
 
   const pos = getPos(e);
 
-  ctx.lineWidth = 4;
+  ctx.lineWidth = 6;
   ctx.lineCap = "round";
   ctx.strokeStyle = "black";
 
   ctx.lineTo(pos.x, pos.y);
   ctx.stroke();
+
+  saveDrawing();
 }
 
 function stop() {
   drawing = false;
+  saveDrawing();
 }
 
 canvas.addEventListener("mousedown", start);
@@ -183,6 +203,7 @@ canvas.addEventListener("touchend", stop);
 
 document.getElementById("clear").onclick = () => {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  localStorage.removeItem("savedDrawing");
   statusText.textContent = "Canvas cleared.";
 };
 
