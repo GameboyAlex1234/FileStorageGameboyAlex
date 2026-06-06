@@ -5,16 +5,28 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 exports.handler = async (event) => {
   try {
-    const body = JSON.parse(event.body);
+    if (event.httpMethod !== "POST") {
+      return {
+        statusCode: 200,
+        body: "Ko-fi webhook is live. Waiting for POST.",
+      };
+    }
 
-    // Ko-fi usually sends JSON inside "data"
-    const data = typeof body.data === "string" ? JSON.parse(body.data) : body;
+    const params = new URLSearchParams(event.body);
+    const rawData = params.get("data");
+
+    if (!rawData) {
+      return { statusCode: 400, body: "Missing Ko-fi data" };
+    }
+
+    const data = JSON.parse(rawData);
 
     if (data.verification_token !== process.env.KOFI_VERIFICATION_TOKEN) {
-      return { statusCode: 403, body: "Invalid token" };
+      return { statusCode: 403, body: "Invalid Ko-fi token" };
     }
 
     const buyerEmail = data.email || data.from_email;
+
     if (!buyerEmail) {
       return { statusCode: 400, body: "No buyer email found" };
     }
@@ -29,26 +41,26 @@ exports.handler = async (event) => {
 
     const sheets = google.sheets({ version: "v4", auth });
 
-    const spreadsheetId = process.env.GOOGLE_SHEET_ID;
-    const range = "Codes!A2:D";
-
     const result = await sheets.spreadsheets.values.get({
-      spreadsheetId,
-      range,
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: "Codes!A2:D",
     });
 
     const rows = result.data.values || [];
-    const index = rows.findIndex((row) => row[1] !== "YES");
+
+    const index = rows.findIndex((row) => {
+      return row[0] && String(row[1]).toUpperCase() !== "YES";
+    });
 
     if (index === -1) {
-      return { statusCode: 200, body: "No codes left" };
+      return { statusCode: 200, body: "No unused codes left" };
     }
 
     const rowNumber = index + 2;
     const code = rows[index][0];
 
     await sheets.spreadsheets.values.update({
-      spreadsheetId,
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
       range: `Codes!B${rowNumber}:D${rowNumber}`,
       valueInputOption: "RAW",
       requestBody: {
@@ -63,9 +75,16 @@ exports.handler = async (event) => {
       text: `Thanks for your purchase!\n\nYour code is: ${code}`,
     });
 
-    return { statusCode: 200, body: "Code sent" };
-  } catch (err) {
-    console.error(err);
-    return { statusCode: 500, body: "Server error" };
+    return {
+      statusCode: 200,
+      body: "Code sent successfully",
+    };
+  } catch (error) {
+    console.error("ERROR:", error);
+
+    return {
+      statusCode: 500,
+      body: `Server error: ${error.message}`,
+    };
   }
 };
