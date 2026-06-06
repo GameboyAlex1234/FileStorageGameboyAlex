@@ -106,7 +106,7 @@ exports.handler = async (event) => {
 
 You bought: ${purchasedItem}
 
-Your redeem code is:
+Your Redeem Code is:
 
 ${code}`,
     });
