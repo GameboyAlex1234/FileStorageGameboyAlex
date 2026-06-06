@@ -1,5 +1,6 @@
 {
   "dependencies": {
     "resend": "latest"
+    "googleapis": "^144.0.0"
   }
 }
