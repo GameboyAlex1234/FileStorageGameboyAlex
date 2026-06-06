@@ -68,12 +68,14 @@ exports.handler = async (event) => {
       },
     });
 
-    await resend.emails.send({
-      from: process.env.FROM_EMAIL,
-      to: buyerEmail,
-      subject: "Your code",
-      text: `Thanks for your purchase!\n\nYour code is: ${code}`,
-    });
+    const emailResult = await resend.emails.send({
+  from: process.env.FROM_EMAIL,
+  to: buyerEmail,
+  subject: "Your code",
+  text: `Thanks for your purchase!\n\nYour code is: ${code}`,
+});
+
+console.log("EMAIL RESULT:", JSON.stringify(emailResult, null, 2));
 
     return {
       statusCode: 200,
