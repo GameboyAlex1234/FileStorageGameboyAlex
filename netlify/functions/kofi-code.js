@@ -43,7 +43,7 @@ exports.handler = async (event) => {
 
     const result = await sheets.spreadsheets.values.get({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: "Codes!A2:D",
+      range: "A2:D",
     });
 
     const rows = result.data.values || [];
