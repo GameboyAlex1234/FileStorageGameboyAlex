@@ -61,7 +61,7 @@ exports.handler = async (event) => {
 
     await sheets.spreadsheets.values.update({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: `Codes!B${rowNumber}:D${rowNumber}`,
+      range: `B${rowNumber}:D${rowNumber}`,
       valueInputOption: "RAW",
       requestBody: {
         values: [["YES", buyerEmail, new Date().toISOString()]],
