@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Petal Purchases</title>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: radial-gradient(circle at center, #0a0a0a, #050505);
+    overflow: hidden;
+    font-family: 'Orbitron', sans-serif;
+    text-align: center;
+  }
+
+  .container {
+    max-width: 900px;
+    padding: 40px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .message {
+    color: #ffffff;
+    font-size: 1.5rem;
+    line-height: 1.8;
+    text-shadow:
+      0 0 10px #0ff,
+      0 0 20px #0ff,
+      0 0 30px #0ff;
+    animation: glowPulse 2s infinite alternate;
+  }
+
+  .button {
+    display: inline-block;
+    margin-top: 35px;
+    padding: 16px 40px;
+    color: white;
+    text-decoration: none;
+    text-transform: uppercase;
+    font-weight: 700;
+    border: 2px solid #0ff;
+    border-radius: 10px;
+    background: rgba(0, 255, 255, 0.08);
+    box-shadow:
+      0 0 10px #0ff,
+      0 0 20px rgba(0,255,255,0.5);
+    transition: all 0.3s ease;
+  }
+
+  .button:hover {
+    background: rgba(0, 255, 255, 0.2);
+    box-shadow:
+      0 0 20px #0ff,
+      0 0 40px #0ff,
+      0 0 60px #0ff;
+    transform: scale(1.05);
+  }
+
+  @keyframes glowPulse {
+    0% {
+      text-shadow:
+        0 0 10px #0ff,
+        0 0 20px #0ff,
+        0 0 30px #0ff;
+    }
+    100% {
+      text-shadow:
+        0 0 20px #0ff,
+        0 0 40px #0ff,
+        0 0 60px #0ff,
+        0 0 80px #0ff;
+    }
+  }
+
+  .particle {
+    position: absolute;
+    background: #0ff;
+    border-radius: 50%;
+    opacity: 0.7;
+    animation: floatParticles linear infinite;
+  }
+
+  @keyframes floatParticles {
+    0% {
+      transform: translateY(100vh) scale(0.5);
+      opacity: 0.7;
+    }
+    100% {
+      transform: translateY(-100vh) scale(1);
+      opacity: 0;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="message">
+    Due to Meta mistakenly delisting FNaM, purchases through Meta are currently unavailable.<br><br>
+
+    We are trying to contact Meta to resolve the issue, but we have not yet received a response.<br><br>
+
+    To purchase Pebbles, please use the Ko-fi shop below.<br><br>
+
+    After purchasing, you will receive an email containing a code that can be redeemed in the Redeem tab on the computer.
+  </div>
+
+  <a class="button" href="https://ko-fi.com/gameboyalex/shop" target="_blank">
+    Purchase Petals on Ko-fi
+  </a>
+</div>
+
+<script>
+  for (let i = 0; i < 50; i++) {
+    const particle = document.createElement('div');
+    particle.className = 'particle';
+
+    const size = Math.random() * 4 + 2;
+
+    particle.style.width = size + 'px';
+    particle.style.height = size + 'px';
+    particle.style.left = Math.random() * 100 + 'vw';
+    particle.style.animationDuration = (Math.random() * 10 + 5) + 's';
+
+    document.body.appendChild(particle);
+  }
+</script>
+
+</body>
+</html>
