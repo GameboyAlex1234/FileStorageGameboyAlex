@@ -1,4 +1,3 @@
-const { google } = require("googleapis");
 const { Resend } = require("resend");
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -19,19 +18,28 @@ exports.handler = async (event) => {
     const params = new URLSearchParams(event.body);
     const rawData = params.get("data");
 
-    console.log("RAW DATA:", rawData);
-
     if (!rawData) {
       return { statusCode: 400, body: "Missing Ko-fi data" };
     }
 
     const data = JSON.parse(rawData);
 
-    console.log("KOFI PAYLOAD:", JSON.stringify(data, null, 2));
+    const buyerEmail = data.email || data.from_email;
+    const itemId = data.shop_items?.[0]?.direct_link_code;
+
+    await resend.emails.send({
+      from: process.env.FROM_EMAIL,
+      to: buyerEmail,
+      subject: "Ko-fi item ID debug",
+      text: `Item ID: ${itemId}
+
+Full item data:
+${JSON.stringify(data.shop_items, null, 2)}`,
+    });
 
     return {
       statusCode: 200,
-      body: "Debug received",
+      body: "Debug email sent",
     };
   } catch (error) {
     console.error("ERROR:", error);
