@@ -1,7 +1,7 @@
 const { google } = require("googleapis");
 const { Resend } = require("resend");
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY2);
 
 exports.handler = async (event) => {
   try {
